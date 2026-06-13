@@ -332,6 +332,40 @@ class Game {
             }
         }
 
+        // COLLISIONS BETWEEN SNAKES
+        const playerHead = this.snake.body[0];
+        const aiHead = this.aiSnake && this.aiSnake.body && this.aiSnake.body[0];
+
+        // head-to-head -> treat as player death (end game)
+        if (aiHead && playerHead.x === aiHead.x && playerHead.y === aiHead.y) {
+            alert("Game over: collided with AI");
+            this.reset();
+            return;
+        }
+
+        // player head hits any AI body part -> player dies (end game)
+        if (this.aiSnake && this.aiSnake.body) {
+            for (let i = 0; i < this.aiSnake.body.length; i++) {
+                const part = this.aiSnake.body[i];
+                if (part.x === playerHead.x && part.y === playerHead.y) {
+                    alert("Game over: collided with AI");
+                    this.reset();
+                    return;
+                }
+            }
+        }
+
+        // AI head hits any player body part (excluding the case handled above) -> AI dies only
+        if (this.aiSnake && this.aiSnake.alive && aiHead) {
+            for (let i = 1; i < this.snake.body.length; i++) {
+                const part = this.snake.body[i];
+                if (part.x === aiHead.x && part.y === aiHead.y) {
+                    this.aiSnake.alive = false;
+                    break;
+                }
+            }
+        }
+
         // apple collision - support multiple apples and both snakes
         for (let i = 0; i < this.apples.length; i++) {
             const a = this.apples[i];
