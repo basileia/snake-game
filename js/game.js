@@ -40,10 +40,10 @@ class Game {
         const overlay = document.getElementById('start-overlay');
         const btnEndless = document.getElementById('start-endless');
         const btnLevels = document.getElementById('start-levels');
-        const aiCheckbox = document.getElementById('start-ai');
         if (!overlay) return;
-        if (btnEndless) btnEndless.addEventListener('click', () => this.start('endless', undefined, aiCheckbox && aiCheckbox.checked));
-        if (btnLevels) btnLevels.addEventListener('click', () => this.start('levels', undefined, aiCheckbox && aiCheckbox.checked));
+        // Endless always runs with AI enabled
+        if (btnEndless) btnEndless.addEventListener('click', () => this.start('endless', undefined, true));
+        if (btnLevels) btnLevels.addEventListener('click', () => this.start('levels', undefined, false));
     }
 
     initControls() {
