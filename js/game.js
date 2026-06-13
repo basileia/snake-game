@@ -60,11 +60,8 @@ class Game {
 
             if (!newDir) return;
 
-            const opposites = { up: "down", down: "up", left: "right", right: "left" };
-
-            // Prevent reversing into itself
-            if (opposites[newDir] === this.snake.direction && this.snake.body.length > 1) return;
-
+            // Prevent reversing into the immediate neck segment (robust 180° check)
+            if (this.wouldReverse(newDir)) return;
             this.snake.direction = newDir;
         });
     }
@@ -102,9 +99,7 @@ class Game {
                 newDir = dy > 0 ? "down" : "up";
             }
 
-            const opposites = { up: "down", down: "up", left: "right", right: "left" };
-            if (opposites[newDir] === this.snake.direction && this.snake.body.length > 1) return;
-
+            if (this.wouldReverse(newDir)) return;
             this.snake.direction = newDir;
         };
 
@@ -131,7 +126,7 @@ class Game {
 
             const setDir = (e) => {
                 if (e && e.preventDefault) e.preventDefault();
-                if (opposites[dir] === this.snake.direction && this.snake.body.length > 1) return;
+                if (this.wouldReverse(dir)) return;
                 this.snake.direction = dir;
             };
 
@@ -148,6 +143,23 @@ class Game {
         this.loop();
     }
 
+    // Return true if changing to newDir would immediately move the head into the neck (180° turn)
+    wouldReverse(newDir) {
+        if (!newDir || !this.snake || !this.snake.body || this.snake.body.length < 2) return false;
+        const head = { ...this.snake.body[0] };
+        const neck = this.snake.body[1];
+        let nx = head.x;
+        let ny = head.y;
+        switch (newDir) {
+            case 'right': nx++; break;
+            case 'left': nx--; break;
+            case 'up': ny--; break;
+            case 'down': ny++; break;
+            default: return false;
+        }
+        return neck && nx === neck.x && ny === neck.y;
+    }
+
     initGrid() {
         this.cols = Math.floor(window.innerWidth / CONFIG.cellSize);
         this.rows = Math.floor(window.innerHeight / CONFIG.cellSize);
@@ -158,7 +170,38 @@ class Game {
 
     reset() {
         this.snake = new Snake("green");
-        this.aiSnake = this.aiEnabled ? new AISnake("yellow") : null;
+        this.aiSnake = this.aiEnabled ? new AISnake("#800080") : null;
+
+        // Position AI snake on the opposite side of the player head (inside walls)
+        if (this.aiSnake) {
+            const playerHead = this.snake.body[0];
+            let ax = this.cols - 1 - playerHead.x;
+            let ay = this.rows - 1 - playerHead.y;
+            // clamp inside playable area (avoid walls at 0 and cols-1)
+            ax = Math.max(1, Math.min(this.cols - 2, ax));
+            ay = Math.max(1, Math.min(this.rows - 2, ay));
+
+            // avoid colliding with player or apples by searching nearby cells
+            const occ = new Set();
+            this.snake.body.forEach(p => occ.add(`${p.x},${p.y}`));
+            this.apples.forEach(p => occ.add(`${p.x},${p.y}`));
+
+            let attempts = 0;
+            while (occ.has(`${ax},${ay}`) && attempts < 50) {
+                // try moving outward in a spiral-ish manner
+                ax = Math.max(1, Math.min(this.cols - 2, ax + (attempts % 3) - 1));
+                ay = Math.max(1, Math.min(this.rows - 2, ay + ((attempts + 1) % 3) - 1));
+                attempts++;
+            }
+
+            this.aiSnake.body = [{ x: ax, y: ay }];
+            // set AI initial direction opposite to player where possible
+            const opposites = { left: 'right', right: 'left', up: 'down', down: 'up' };
+            this.aiSnake.direction = opposites[this.snake.direction] || 'left';
+            this.aiSnake.alive = true;
+            console.log('AI snake positioned at', ax, ay, 'direction', this.aiSnake.direction);
+        }
+
         this.spawnApplesForLevel();
     }
 
@@ -167,7 +210,7 @@ class Game {
         if (overlay) overlay.style.display = 'none';
         this.mode = mode;
         this.aiEnabled = !!aiEnabled;
-        if (this.aiEnabled) this.aiSnake = new AISnake("yellow");
+        if (this.aiEnabled) this.aiSnake = new AISnake("#800080");
         if (mode === 'levels') {
             if (typeof startLevel === 'number' && startLevel > 0) {
                 this.setLevel(startLevel);
@@ -220,6 +263,10 @@ class Game {
                 const acy = aHead.y * CONFIG.cellSize;
                 this.ctx.fillStyle = this.aiSnake.color;
                 this.ctx.fillRect(acx, acy, CONFIG.cellSize, CONFIG.cellSize);
+                    // outline for visibility
+                    this.ctx.lineWidth = 2;
+                    this.ctx.strokeStyle = "black";
+                    this.ctx.strokeRect(acx, acy, CONFIG.cellSize, CONFIG.cellSize);
             }
         }
         this.reset();
@@ -252,7 +299,7 @@ class Game {
 
         // AI move (if present)
         if (this.aiSnake && this.aiSnake.alive) {
-            this.aiSnake.move(this.cols, this.rows);
+            this.aiSnake.move(this.cols, this.rows, this.apples);
         }
 
         // player wall collision
@@ -497,6 +544,87 @@ class Game {
             this.ctx.beginPath();
             this.ctx.arc(ex2 + eyeSize / 2, ey2 + eyeSize / 2, eyeSize / 2, 0, Math.PI * 2);
             this.ctx.fill();
+        }
+
+        // draw AI snake if present
+        if (this.aiSnake && this.aiSnake.body && this.aiSnake.body.length > 0) {
+            const abody = this.aiSnake.body;
+
+            // body (exclude head and tail)
+            if (abody.length > 2) {
+                this.ctx.fillStyle = this.aiSnake.color;
+                for (let i = 1; i < abody.length - 1; i++) {
+                    const part = abody[i];
+                    this.ctx.fillRect(
+                        part.x * CONFIG.cellSize,
+                        part.y * CONFIG.cellSize,
+                        CONFIG.cellSize,
+                        CONFIG.cellSize
+                    );
+                }
+            }
+
+            // tail (darker)
+            if (abody.length > 1) {
+                const tail = abody[abody.length - 1];
+                this.ctx.fillStyle = "#4B0082"; // darker purple for tail
+                this.ctx.fillRect(
+                    tail.x * CONFIG.cellSize,
+                    tail.y * CONFIG.cellSize,
+                    CONFIG.cellSize,
+                    CONFIG.cellSize
+                );
+            }
+
+            // head
+            const aHead = abody[0];
+            if (aHead) {
+                const acx = aHead.x * CONFIG.cellSize;
+                const acy = aHead.y * CONFIG.cellSize;
+                this.ctx.fillStyle = this.aiSnake.color;
+                this.ctx.fillRect(acx, acy, CONFIG.cellSize, CONFIG.cellSize);
+                // outline for visibility
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeStyle = "black";
+                this.ctx.strokeRect(acx, acy, CONFIG.cellSize, CONFIG.cellSize);
+                // eyes (match player style)
+                const eyeSize = Math.max(2, Math.floor(CONFIG.cellSize / 6));
+                let ex1, ey1, ex2, ey2;
+                switch (this.aiSnake.direction) {
+                    case "right":
+                        ex1 = acx + CONFIG.cellSize * 0.6;
+                        ey1 = acy + CONFIG.cellSize * 0.25;
+                        ex2 = acx + CONFIG.cellSize * 0.6;
+                        ey2 = acy + CONFIG.cellSize * 0.75;
+                        break;
+                    case "left":
+                        ex1 = acx + CONFIG.cellSize * 0.15;
+                        ey1 = acy + CONFIG.cellSize * 0.25;
+                        ex2 = acx + CONFIG.cellSize * 0.15;
+                        ey2 = acy + CONFIG.cellSize * 0.75;
+                        break;
+                    case "up":
+                        ex1 = acx + CONFIG.cellSize * 0.25;
+                        ey1 = acy + CONFIG.cellSize * 0.15;
+                        ex2 = acx + CONFIG.cellSize * 0.75;
+                        ey2 = acy + CONFIG.cellSize * 0.15;
+                        break;
+                    case "down":
+                    default:
+                        ex1 = acx + CONFIG.cellSize * 0.25;
+                        ey1 = acy + CONFIG.cellSize * 0.75;
+                        ex2 = acx + CONFIG.cellSize * 0.75;
+                        ey2 = acy + CONFIG.cellSize * 0.75;
+                        break;
+                }
+                this.ctx.fillStyle = "white";
+                this.ctx.beginPath();
+                this.ctx.arc(ex1 + eyeSize / 2, ey1 + eyeSize / 2, eyeSize / 2, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.beginPath();
+                this.ctx.arc(ex2 + eyeSize / 2, ey2 + eyeSize / 2, eyeSize / 2, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
         }
 
         // HUD: show current level only in levels mode
