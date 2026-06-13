@@ -158,7 +158,7 @@ class Game {
 
     reset() {
         this.snake = new Snake("green");
-        this.aiSnake = this.aiEnabled ? new AISnake("blue") : null;
+        this.aiSnake = this.aiEnabled ? new AISnake("yellow") : null;
         this.spawnApplesForLevel();
     }
 
@@ -167,7 +167,7 @@ class Game {
         if (overlay) overlay.style.display = 'none';
         this.mode = mode;
         this.aiEnabled = !!aiEnabled;
-        if (this.aiEnabled) this.aiSnake = new AISnake("blue");
+        if (this.aiEnabled) this.aiSnake = new AISnake("yellow");
         if (mode === 'levels') {
             if (typeof startLevel === 'number' && startLevel > 0) {
                 this.setLevel(startLevel);
