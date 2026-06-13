@@ -287,7 +287,7 @@ class Game {
 
         // AI move (if present)
         if (this.aiSnake && this.aiSnake.alive) {
-            this.aiSnake.move(this.cols, this.rows);
+            this.aiSnake.move(this.cols, this.rows, this.apples);
         }
 
         // player wall collision
