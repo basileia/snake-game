@@ -174,6 +174,19 @@ class Game {
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+        // grid dots for orientation (inside walls)
+        this.ctx.fillStyle = "#e0e0e0";
+        const dotRadius = Math.max(1, Math.floor(CONFIG.cellSize / 10));
+        for (let gy = 1; gy < this.rows - 1; gy++) {
+            for (let gx = 1; gx < this.cols - 1; gx++) {
+                const cx = gx * CONFIG.cellSize + CONFIG.cellSize / 2;
+                const cy = gy * CONFIG.cellSize + CONFIG.cellSize / 2;
+                this.ctx.beginPath();
+                this.ctx.arc(cx, cy, dotRadius, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+        }
+
         // draw walls (border)
         this.ctx.fillStyle = "#D2691E"; // orange-brown
         // top and bottom
