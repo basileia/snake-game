@@ -1,6 +1,7 @@
 import { Snake } from "./snake.js";
 import { Apple } from "./apple.js";
 import { CONFIG } from "./config.js";
+import { AISnake } from "./aiSnake.js";
 
 class Game {
     constructor() {
@@ -15,6 +16,8 @@ class Game {
         });
 
         this.snake = new Snake("green");
+        this.aiSnake = null;
+        this.aiEnabled = false;
         this.apples = []; // array of {x,y}
 
         // level manager
@@ -37,9 +40,10 @@ class Game {
         const overlay = document.getElementById('start-overlay');
         const btnEndless = document.getElementById('start-endless');
         const btnLevels = document.getElementById('start-levels');
+        const aiCheckbox = document.getElementById('start-ai');
         if (!overlay) return;
-        if (btnEndless) btnEndless.addEventListener('click', () => this.start('endless'));
-        if (btnLevels) btnLevels.addEventListener('click', () => this.start('levels'));
+        if (btnEndless) btnEndless.addEventListener('click', () => this.start('endless', undefined, aiCheckbox && aiCheckbox.checked));
+        if (btnLevels) btnLevels.addEventListener('click', () => this.start('levels', undefined, aiCheckbox && aiCheckbox.checked));
     }
 
     initControls() {
@@ -154,13 +158,16 @@ class Game {
 
     reset() {
         this.snake = new Snake("green");
+        this.aiSnake = this.aiEnabled ? new AISnake("blue") : null;
         this.spawnApplesForLevel();
     }
 
-    start(mode, startLevel) {
+    start(mode, startLevel, aiEnabled = false) {
         const overlay = document.getElementById('start-overlay');
         if (overlay) overlay.style.display = 'none';
         this.mode = mode;
+        this.aiEnabled = !!aiEnabled;
+        if (this.aiEnabled) this.aiSnake = new AISnake("blue");
         if (mode === 'levels') {
             if (typeof startLevel === 'number' && startLevel > 0) {
                 this.setLevel(startLevel);
@@ -174,6 +181,46 @@ class Game {
             this.level = 1;
             this.levelComplete = false;
             this.currentSpeed = CONFIG.speed;
+        }
+
+        // draw AI snake if present
+        if (this.aiSnake && this.aiSnake.body && this.aiSnake.body.length > 0) {
+            const abody = this.aiSnake.body;
+
+            // body (exclude head and tail)
+            if (abody.length > 2) {
+                this.ctx.fillStyle = this.aiSnake.color;
+                for (let i = 1; i < abody.length - 1; i++) {
+                    const part = abody[i];
+                    this.ctx.fillRect(
+                        part.x * CONFIG.cellSize,
+                        part.y * CONFIG.cellSize,
+                        CONFIG.cellSize,
+                        CONFIG.cellSize
+                    );
+                }
+            }
+
+            // tail (darker)
+            if (abody.length > 1) {
+                const tail = abody[abody.length - 1];
+                this.ctx.fillStyle = "darkblue";
+                this.ctx.fillRect(
+                    tail.x * CONFIG.cellSize,
+                    tail.y * CONFIG.cellSize,
+                    CONFIG.cellSize,
+                    CONFIG.cellSize
+                );
+            }
+
+            // head
+            const aHead = abody[0];
+            if (aHead) {
+                const acx = aHead.x * CONFIG.cellSize;
+                const acy = aHead.y * CONFIG.cellSize;
+                this.ctx.fillStyle = this.aiSnake.color;
+                this.ctx.fillRect(acx, acy, CONFIG.cellSize, CONFIG.cellSize);
+            }
         }
         this.reset();
         this.loop();
@@ -199,18 +246,23 @@ class Game {
     }
 
     update() {
+        // player move
         this.snake.move();
-
         const head = this.snake.body[0];
 
-        // wall collision
+        // AI move (if present)
+        if (this.aiSnake && this.aiSnake.alive) {
+            this.aiSnake.move(this.cols, this.rows);
+        }
+
+        // player wall collision
         if (head.x < 0 || head.x >= this.cols || head.y < 0 || head.y >= this.rows) {
             alert("Game over: hit the wall");
             this.reset();
             return;
         }
 
-        // self collision
+        // player self collision
         for (let i = 1; i < this.snake.body.length; i++) {
             const part = this.snake.body[i];
             if (part.x === head.x && part.y === head.y) {
@@ -220,16 +272,38 @@ class Game {
             }
         }
 
-        // apple collision - support multiple apples in this.apples
+        // AI self-collision (kills AI only)
+        if (this.aiSnake && this.aiSnake.alive) {
+            const aHead = this.aiSnake.body[0];
+            for (let i = 1; i < this.aiSnake.body.length; i++) {
+                const part = this.aiSnake.body[i];
+                if (part.x === aHead.x && part.y === aHead.y) {
+                    // AI died
+                    this.aiSnake.alive = false;
+                    break;
+                }
+            }
+        }
+
+        // apple collision - support multiple apples and both snakes
         for (let i = 0; i < this.apples.length; i++) {
             const a = this.apples[i];
+            // player eats
             if (head.x === a.x && head.y === a.y) {
                 this.snake.grow();
-                // remove eaten apple
                 this.apples.splice(i, 1);
-                // spawn replacement to keep count for current level
                 this.spawnApplesForLevel(1);
                 break;
+            }
+            // AI eats
+            if (this.aiSnake && this.aiSnake.alive) {
+                const aHead = this.aiSnake.body[0];
+                if (aHead.x === a.x && aHead.y === a.y) {
+                    this.aiSnake.grow();
+                    this.apples.splice(i, 1);
+                    this.spawnApplesForLevel(1);
+                    break;
+                }
             }
         }
 
@@ -282,6 +356,7 @@ class Game {
         const occupied = () => {
             const occ = new Set();
             this.snake.body.forEach(p => occ.add(`${p.x},${p.y}`));
+            if (this.aiSnake) this.aiSnake.body.forEach(p => occ.add(`${p.x},${p.y}`));
             this.apples.forEach(p => occ.add(`${p.x},${p.y}`));
             return occ;
         };
