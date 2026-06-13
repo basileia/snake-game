@@ -410,7 +410,8 @@ class Game {
         const desired = 20; // keep target fixed at 20 per user's request
         const caps = this.getCapacity();
         this.targetLength = Math.min(desired, caps.recommended);
-        this.currentSpeed = Math.max(40, CONFIG.speed - (this.level - 1) * 10);
+        // Do not change speed per level — use configured runtime speed (dev vs gh-pages)
+        this.currentSpeed = CONFIG.speed;
     }
 
     getCapacity() {
