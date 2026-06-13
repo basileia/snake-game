@@ -190,10 +190,22 @@ class Game {
 
     setLevel(level) {
         this.level = level;
-        // target length grows per level
-        this.targetLength = 20 + (level - 1) * 4;
+        // desired target length grows per level
+        const desired = 20 + (level - 1) * 4;
+        const caps = this.getCapacity();
+        // clamp desired to a recommended playable value so level stays fun
+        this.targetLength = Math.min(desired, caps.recommended);
         // speed slightly increases per level
         this.currentSpeed = Math.max(40, CONFIG.speed - (level - 1) * 10);
+    }
+
+    getCapacity() {
+        const playableCols = Math.max(0, this.cols - 2);
+        const playableRows = Math.max(0, this.rows - 2);
+        const playable = playableCols * playableRows;
+        const maxMoving = Math.max(0, playable - 1);
+        const recommended = Math.max(1, Math.floor(playable * 0.7));
+        return { playable, maxMoving, recommended, playableCols, playableRows };
     }
 
     checkLevelComplete() {
@@ -339,6 +351,17 @@ class Game {
             this.ctx.textBaseline = "middle";
             this.ctx.fillText(msg, this.canvas.width / 2, this.canvas.height / 2);
         }
+
+        // HUD: show only current level (top-left)
+        const hud = `Level ${this.level}`;
+        this.ctx.fillStyle = "rgba(0,0,0,0.6)";
+        const w = Math.min(this.canvas.width - 16, this.ctx.measureText(hud).width + 16);
+        this.ctx.fillRect(8, 8, w, 28);
+        this.ctx.fillStyle = "white";
+        this.ctx.font = "14px sans-serif";
+        this.ctx.textAlign = "left";
+        this.ctx.textBaseline = "top";
+        this.ctx.fillText(hud, 16, 12);
     }
 }
 
