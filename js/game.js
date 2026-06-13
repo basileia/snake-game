@@ -11,11 +11,11 @@ class Game {
 
         window.addEventListener("resize", () => {
             this.initGrid();
-            this.apple = new Apple(this.cols, this.rows, this.snake.body);
+            this.spawnApplesForLevel();
         });
 
         this.snake = new Snake("green");
-        this.apple = new Apple(this.cols, this.rows, this.snake.body);
+        this.apples = []; // array of {x,y}
 
         // level manager
         this.level = 1;
@@ -154,19 +154,17 @@ class Game {
 
     reset() {
         this.snake = new Snake("green");
-        this.apple = new Apple(this.cols, this.rows, this.snake.body);
+        this.spawnApplesForLevel();
     }
 
     start(mode, startLevel) {
         const overlay = document.getElementById('start-overlay');
         if (overlay) overlay.style.display = 'none';
         this.mode = mode;
-        this.reset();
         if (mode === 'levels') {
             if (typeof startLevel === 'number' && startLevel > 0) {
                 this.setLevel(startLevel);
             } else if (this.level && this.level > 1) {
-                // keep existing level if previously set
                 this.setLevel(this.level);
             } else {
                 this.setLevel(1);
@@ -177,6 +175,7 @@ class Game {
             this.levelComplete = false;
             this.currentSpeed = CONFIG.speed;
         }
+        this.reset();
         this.loop();
     }
 
@@ -221,10 +220,17 @@ class Game {
             }
         }
 
-        // apple collision
-        if (head.x === this.apple.position.x && head.y === this.apple.position.y) {
-            this.snake.grow();
-            this.apple.position = this.apple.randomPosition(this.snake.body);
+        // apple collision - support multiple apples in this.apples
+        for (let i = 0; i < this.apples.length; i++) {
+            const a = this.apples[i];
+            if (head.x === a.x && head.y === a.y) {
+                this.snake.grow();
+                // remove eaten apple
+                this.apples.splice(i, 1);
+                // spawn replacement to keep count for current level
+                this.spawnApplesForLevel(1);
+                break;
+            }
         }
 
         if (this.mode === 'levels') this.checkLevelComplete();
@@ -258,10 +264,45 @@ class Game {
     levelUp() {
         this.levelComplete = false;
         this.setLevel(this.level + 1);
-        this.apple.position = this.apple.randomPosition(this.snake.body);
+        this.spawnApplesForLevel();
     }
 
     // changeLevel removed — levels progress via gameplay
+
+    spawnApplesForLevel(ensureCount = null) {
+        // ensureCount: if number provided, spawn that many new apples (used on eat)
+        const applesNeeded = (() => {
+            if (ensureCount && ensureCount > 0) return ensureCount;
+            if (this.mode === 'levels' && this.level === 2) return 5;
+            return 1;
+        })();
+        if (!ensureCount) this.apples = []; // fresh fill for the level
+
+        const occupied = () => {
+            const occ = new Set();
+            this.snake.body.forEach(p => occ.add(`${p.x},${p.y}`));
+            this.apples.forEach(p => occ.add(`${p.x},${p.y}`));
+            return occ;
+        };
+
+        const occ = occupied();
+        const maxAttempts = 2000;
+        for (let n = 0; n < applesNeeded; n++) {
+            let attempts = 0;
+            let px, py;
+            do {
+                px = Math.floor(Math.random() * Math.max(1, this.cols - 2)) + 1;
+                py = Math.floor(Math.random() * Math.max(1, this.rows - 2)) + 1;
+                attempts++;
+                if (attempts > maxAttempts) break;
+            } while (occ.has(`${px},${py}`));
+
+            if (attempts <= maxAttempts) {
+                this.apples.push({ x: px, y: py });
+                occ.add(`${px},${py}`);
+            }
+        }
+    }
 
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -294,12 +335,14 @@ class Game {
 
         // apple
         this.ctx.fillStyle = "red";
-        this.ctx.fillRect(
-            this.apple.position.x * CONFIG.cellSize,
-            this.apple.position.y * CONFIG.cellSize,
-            CONFIG.cellSize,
-            CONFIG.cellSize
-        );
+        for (const a of this.apples) {
+            this.ctx.fillRect(
+                a.x * CONFIG.cellSize,
+                a.y * CONFIG.cellSize,
+                CONFIG.cellSize,
+                CONFIG.cellSize
+            );
+        }
 
         // snake: body, tail, head (with simple eyes)
         const body = this.snake.body;
