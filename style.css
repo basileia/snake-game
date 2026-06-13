@@ -17,6 +17,36 @@ body {
     pointer-events: auto;
 }
 
+/* start overlay */
+.start-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.45);
+    z-index: 2000;
+}
+.start-card {
+    background: white;
+    color: #111;
+    padding: 18px 22px;
+    border-radius: 10px;
+    text-align: center;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+}
+.start-actions { display:flex; gap:10px; justify-content:center; margin-top:12px }
+.start-btn {
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: none;
+    background: #2b8a3e;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+}
+.start-btn:nth-child(2) { background: #1e73b8 }
+
 .touch-row {
     display: flex;
     gap: 8px;

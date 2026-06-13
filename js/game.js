@@ -28,7 +28,18 @@ class Game {
         this.initTouchControls();
         this.initOnscreenControls();
 
-        this.init();
+        // don't auto-start; wait for user to pick mode
+        this.mode = null; // 'endless' | 'levels'
+        this.setupStartMenu();
+    }
+
+    setupStartMenu() {
+        const overlay = document.getElementById('start-overlay');
+        const btnEndless = document.getElementById('start-endless');
+        const btnLevels = document.getElementById('start-levels');
+        if (!overlay) return;
+        if (btnEndless) btnEndless.addEventListener('click', () => this.start('endless'));
+        if (btnLevels) btnLevels.addEventListener('click', () => this.start('levels'));
     }
 
     initControls() {
@@ -146,15 +157,35 @@ class Game {
         this.apple = new Apple(this.cols, this.rows, this.snake.body);
     }
 
+    start(mode) {
+        const overlay = document.getElementById('start-overlay');
+        if (overlay) overlay.style.display = 'none';
+        this.mode = mode;
+        this.reset();
+        if (mode === 'levels') {
+            this.setLevel(1);
+        } else {
+            // endless: no level progression
+            this.level = 1;
+            this.levelComplete = false;
+            this.currentSpeed = CONFIG.speed;
+        }
+        this.loop();
+    }
+
     loop() {
-        if (!this.levelComplete) {
+        // update depending on mode
+        if (this.mode === 'levels') {
+            if (!this.levelComplete) this.update();
+        } else {
+            // endless or not-started (defensive)
             this.update();
         }
 
         this.draw();
 
-        // advance level when timer expires
-        if (this.levelComplete && Date.now() >= this.levelCompleteTimer) {
+        // advance level when timer expires (levels only)
+        if (this.mode === 'levels' && this.levelComplete && Date.now() >= this.levelCompleteTimer) {
             this.levelUp();
         }
 
@@ -189,7 +220,7 @@ class Game {
             this.apple.position = this.apple.randomPosition(this.snake.body);
         }
 
-        this.checkLevelComplete();
+        if (this.mode === 'levels') this.checkLevelComplete();
     }
 
     setLevel(level) {
@@ -342,16 +373,18 @@ class Game {
             this.ctx.fill();
         }
 
-        // HUD: show only current level (top-left)
-        const hud = `Level ${this.level}`;
-        this.ctx.fillStyle = "rgba(0,0,0,0.6)";
-        const w = Math.min(this.canvas.width - 16, this.ctx.measureText(hud).width + 16);
-        this.ctx.fillRect(8, 8, w, 28);
-        this.ctx.fillStyle = "white";
-        this.ctx.font = "14px sans-serif";
-        this.ctx.textAlign = "left";
-        this.ctx.textBaseline = "top";
-        this.ctx.fillText(hud, 16, 12);
+        // HUD: show current level only in levels mode
+        if (this.mode === 'levels') {
+            const hud = `Level ${this.level}`;
+            this.ctx.fillStyle = "rgba(0,0,0,0.6)";
+            const w = Math.min(this.canvas.width - 16, this.ctx.measureText(hud).width + 16);
+            this.ctx.fillRect(8, 8, w, 28);
+            this.ctx.fillStyle = "white";
+            this.ctx.font = "14px sans-serif";
+            this.ctx.textAlign = "left";
+            this.ctx.textBaseline = "top";
+            this.ctx.fillText(hud, 16, 12);
+        }
     }
 }
 
