@@ -158,7 +158,7 @@ class Game {
 
     reset() {
         this.snake = new Snake("green");
-        this.aiSnake = this.aiEnabled ? new AISnake("yellow") : null;
+        this.aiSnake = this.aiEnabled ? new AISnake("#800080") : null;
 
         // Position AI snake on the opposite side of the player head (inside walls)
         if (this.aiSnake) {
@@ -198,7 +198,7 @@ class Game {
         if (overlay) overlay.style.display = 'none';
         this.mode = mode;
         this.aiEnabled = !!aiEnabled;
-        if (this.aiEnabled) this.aiSnake = new AISnake("yellow");
+        if (this.aiEnabled) this.aiSnake = new AISnake("#800080");
         if (mode === 'levels') {
             if (typeof startLevel === 'number' && startLevel > 0) {
                 this.setLevel(startLevel);
@@ -555,7 +555,7 @@ class Game {
             // tail (darker)
             if (abody.length > 1) {
                 const tail = abody[abody.length - 1];
-                this.ctx.fillStyle = "darkgoldenrod";
+                this.ctx.fillStyle = "#4B0082"; // darker purple for tail
                 this.ctx.fillRect(
                     tail.x * CONFIG.cellSize,
                     tail.y * CONFIG.cellSize,
