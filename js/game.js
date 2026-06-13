@@ -169,7 +169,11 @@ class Game {
 
     reset() {
         this.snake = new Snake("green");
-        this.aiSnake = (this.mode === 'endless') ? new AISnake("#800080") : null;
+        // AI is present in Endless mode, and also in Levels mode for level 2
+        this.aiSnake = null;
+        if (this.mode === 'endless' || (this.mode === 'levels' && this.level === 2)) {
+            this.aiSnake = new AISnake("#800080");
+        }
 
         // Position AI snake on the opposite side of the player head (inside walls)
         if (this.aiSnake) {
@@ -208,8 +212,7 @@ class Game {
         const overlay = document.getElementById('start-overlay');
         if (overlay) overlay.style.display = 'none';
         this.mode = mode;
-        // Endless mode automatically includes the AI snake
-        if (this.mode === 'endless') this.aiSnake = new AISnake("#800080");
+        // AI creation handled in reset() based on mode/level
         if (mode === 'levels') {
             if (typeof startLevel === 'number' && startLevel > 0) {
                 this.setLevel(startLevel);
