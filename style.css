@@ -1,0 +1,41 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    touch-action: none;
+}
+
+.touch-controls {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    z-index: 1000;
+    pointer-events: auto;
+}
+
+.touch-row {
+    display: flex;
+    gap: 8px;
+}
+
+.touch-btn {
+    width: 68px;
+    height: 68px;
+    border-radius: 12px;
+    border: none;
+    background: rgba(0,0,0,0.35);
+    color: white;
+    font-size: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: none;
+}
+
+@media (min-width: 900px) {
+    .touch-controls { display: none; }
+}
