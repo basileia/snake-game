@@ -157,13 +157,20 @@ class Game {
         this.apple = new Apple(this.cols, this.rows, this.snake.body);
     }
 
-    start(mode) {
+    start(mode, startLevel) {
         const overlay = document.getElementById('start-overlay');
         if (overlay) overlay.style.display = 'none';
         this.mode = mode;
         this.reset();
         if (mode === 'levels') {
-            this.setLevel(1);
+            if (typeof startLevel === 'number' && startLevel > 0) {
+                this.setLevel(startLevel);
+            } else if (this.level && this.level > 1) {
+                // keep existing level if previously set
+                this.setLevel(this.level);
+            } else {
+                this.setLevel(1);
+            }
         } else {
             // endless: no level progression
             this.level = 1;
@@ -388,4 +395,5 @@ class Game {
     }
 }
 
-new Game();
+// expose instance for debugging / manual start from console
+window.game = new Game();
