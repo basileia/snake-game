@@ -10,7 +10,7 @@ try {
     // If served from GitHub Pages, use a slower default so it's kid-friendly
     // Note: lower `speed` value => faster game (it's the loop delay in ms).
     if (host && host.includes('github.io')) {
-        runtimeSpeed = 220; // slower for kids on gh-pages
+        runtimeSpeed = 400; // slower for kids on gh-pages (increased delay)
     }
 
     // URL override: ?speed=100 (useful for testing from any host)
