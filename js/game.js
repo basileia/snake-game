@@ -395,6 +395,9 @@ class Game {
         // ensureCount: if number provided, spawn that many new apples (used on eat)
         const applesNeeded = (() => {
             if (ensureCount && ensureCount > 0) return ensureCount;
+            // In endless mode keep 5 apples on the field
+            if (this.mode === 'endless') return 5;
+            // preserve previous special-case for early levels
             if (this.mode === 'levels' && this.level === 2) return 5;
             return 1;
         })();
