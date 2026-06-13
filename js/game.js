@@ -17,16 +17,16 @@ class Game {
         this.snake = new Snake("green");
         this.apple = new Apple(this.cols, this.rows, this.snake.body);
 
+        // level manager
+        this.level = 1;
+        this.levelComplete = false;
+        this.levelCompleteTimer = 0;
+        this.currentSpeed = CONFIG.speed;
+        this.setLevel(this.level);
+
         this.initControls();
         this.initTouchControls();
         this.initOnscreenControls();
-
-        // level manager
-        this.level = 1;
-        this.currentSpeed = CONFIG.speed;
-        this.levelComplete = false;
-        this.levelCompleteTimer = 0;
-        this.setLevel(this.level);
 
         this.init();
     }
@@ -40,6 +40,8 @@ class Game {
             if (key === "ArrowDown" || key === "s" || key === "S") newDir = "down";
             if (key === "ArrowLeft" || key === "a" || key === "A") newDir = "left";
             if (key === "ArrowRight" || key === "d" || key === "D") newDir = "right";
+
+            // (no level shortcut keys)
 
             if (!newDir) return;
 
@@ -123,6 +125,8 @@ class Game {
             el.addEventListener('pointerup', () => el.blur());
             el.addEventListener('contextmenu', (e) => e.preventDefault());
         });
+
+        // no on-screen level buttons
     }
 
     init() {
@@ -189,14 +193,11 @@ class Game {
     }
 
     setLevel(level) {
-        this.level = level;
-        // desired target length grows per level
-        const desired = 20 + (level - 1) * 4;
+        this.level = Math.max(1, Math.floor(level));
+        const desired = 20 + (this.level - 1) * 4; // base target grows per level
         const caps = this.getCapacity();
-        // clamp desired to a recommended playable value so level stays fun
         this.targetLength = Math.min(desired, caps.recommended);
-        // speed slightly increases per level
-        this.currentSpeed = Math.max(40, CONFIG.speed - (level - 1) * 10);
+        this.currentSpeed = Math.max(40, CONFIG.speed - (this.level - 1) * 10);
     }
 
     getCapacity() {
@@ -219,9 +220,10 @@ class Game {
     levelUp() {
         this.levelComplete = false;
         this.setLevel(this.level + 1);
-        // reposition apple to avoid spawning on snake after level change
         this.apple.position = this.apple.randomPosition(this.snake.body);
     }
+
+    // changeLevel removed — levels progress via gameplay
 
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -338,18 +340,6 @@ class Game {
             this.ctx.beginPath();
             this.ctx.arc(ex2 + eyeSize / 2, ey2 + eyeSize / 2, eyeSize / 2, 0, Math.PI * 2);
             this.ctx.fill();
-        }
-
-        // draw level-complete overlay
-        if (this.levelComplete) {
-            const msg = `Level ${this.level} Complete`;
-            this.ctx.fillStyle = "rgba(0,0,0,0.6)";
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            this.ctx.fillStyle = "white";
-            this.ctx.font = `${Math.max(16, Math.floor(this.canvas.width / 20))}px sans-serif`;
-            this.ctx.textAlign = "center";
-            this.ctx.textBaseline = "middle";
-            this.ctx.fillText(msg, this.canvas.width / 2, this.canvas.height / 2);
         }
 
         // HUD: show only current level (top-left)
