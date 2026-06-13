@@ -187,6 +187,7 @@ class Game {
             const opposites = { left: 'right', right: 'left', up: 'down', down: 'up' };
             this.aiSnake.direction = opposites[this.snake.direction] || 'left';
             this.aiSnake.alive = true;
+            console.log('AI snake positioned at', ax, ay, 'direction', this.aiSnake.direction);
         }
 
         this.spawnApplesForLevel();
@@ -250,6 +251,10 @@ class Game {
                 const acy = aHead.y * CONFIG.cellSize;
                 this.ctx.fillStyle = this.aiSnake.color;
                 this.ctx.fillRect(acx, acy, CONFIG.cellSize, CONFIG.cellSize);
+                    // outline for visibility
+                    this.ctx.lineWidth = 2;
+                    this.ctx.strokeStyle = "black";
+                    this.ctx.strokeRect(acx, acy, CONFIG.cellSize, CONFIG.cellSize);
             }
         }
         this.reset();

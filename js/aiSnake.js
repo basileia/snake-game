@@ -1,7 +1,7 @@
 import { Snake } from "./snake.js";
 
 export class AISnake extends Snake {
-    constructor(color = "yellow") {
+    constructor(color = "#FFD700") {
         super(color);
         this.alive = true;
         this.changeProb = 0.25; // chance to change direction each tick
