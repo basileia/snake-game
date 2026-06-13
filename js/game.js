@@ -289,7 +289,6 @@ class Game {
             }
         }
         this.reset();
-        console.log('Game start: mode=', this.mode, 'level=', this.level, 'speed=', this.currentSpeed);
         this.loop();
     }
 
