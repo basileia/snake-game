@@ -575,6 +575,43 @@ class Game {
                 this.ctx.lineWidth = 2;
                 this.ctx.strokeStyle = "black";
                 this.ctx.strokeRect(acx, acy, CONFIG.cellSize, CONFIG.cellSize);
+                // eyes (match player style)
+                const eyeSize = Math.max(2, Math.floor(CONFIG.cellSize / 6));
+                let ex1, ey1, ex2, ey2;
+                switch (this.aiSnake.direction) {
+                    case "right":
+                        ex1 = acx + CONFIG.cellSize * 0.6;
+                        ey1 = acy + CONFIG.cellSize * 0.25;
+                        ex2 = acx + CONFIG.cellSize * 0.6;
+                        ey2 = acy + CONFIG.cellSize * 0.75;
+                        break;
+                    case "left":
+                        ex1 = acx + CONFIG.cellSize * 0.15;
+                        ey1 = acy + CONFIG.cellSize * 0.25;
+                        ex2 = acx + CONFIG.cellSize * 0.15;
+                        ey2 = acy + CONFIG.cellSize * 0.75;
+                        break;
+                    case "up":
+                        ex1 = acx + CONFIG.cellSize * 0.25;
+                        ey1 = acy + CONFIG.cellSize * 0.15;
+                        ex2 = acx + CONFIG.cellSize * 0.75;
+                        ey2 = acy + CONFIG.cellSize * 0.15;
+                        break;
+                    case "down":
+                    default:
+                        ex1 = acx + CONFIG.cellSize * 0.25;
+                        ey1 = acy + CONFIG.cellSize * 0.75;
+                        ex2 = acx + CONFIG.cellSize * 0.75;
+                        ey2 = acy + CONFIG.cellSize * 0.75;
+                        break;
+                }
+                this.ctx.fillStyle = "white";
+                this.ctx.beginPath();
+                this.ctx.arc(ex1 + eyeSize / 2, ey1 + eyeSize / 2, eyeSize / 2, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.beginPath();
+                this.ctx.arc(ex2 + eyeSize / 2, ey2 + eyeSize / 2, eyeSize / 2, 0, Math.PI * 2);
+                this.ctx.fill();
             }
         }
 
