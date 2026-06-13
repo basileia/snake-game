@@ -17,7 +17,6 @@ class Game {
 
         this.snake = new Snake("green");
         this.aiSnake = null;
-        this.aiEnabled = false;
         this.apples = []; // array of {x,y}
 
         // level manager
@@ -42,8 +41,8 @@ class Game {
         const btnLevels = document.getElementById('start-levels');
         if (!overlay) return;
         // Endless always runs with AI enabled
-        if (btnEndless) btnEndless.addEventListener('click', () => this.start('endless', undefined, true));
-        if (btnLevels) btnLevels.addEventListener('click', () => this.start('levels', undefined, false));
+        if (btnEndless) btnEndless.addEventListener('click', () => this.start('endless'));
+        if (btnLevels) btnLevels.addEventListener('click', () => this.start('levels'));
     }
 
     initControls() {
@@ -170,7 +169,7 @@ class Game {
 
     reset() {
         this.snake = new Snake("green");
-        this.aiSnake = this.aiEnabled ? new AISnake("#800080") : null;
+        this.aiSnake = (this.mode === 'endless') ? new AISnake("#800080") : null;
 
         // Position AI snake on the opposite side of the player head (inside walls)
         if (this.aiSnake) {
@@ -205,12 +204,12 @@ class Game {
         this.spawnApplesForLevel();
     }
 
-    start(mode, startLevel, aiEnabled = false) {
+    start(mode, startLevel) {
         const overlay = document.getElementById('start-overlay');
         if (overlay) overlay.style.display = 'none';
         this.mode = mode;
-        this.aiEnabled = !!aiEnabled;
-        if (this.aiEnabled) this.aiSnake = new AISnake("#800080");
+        // Endless mode automatically includes the AI snake
+        if (this.mode === 'endless') this.aiSnake = new AISnake("#800080");
         if (mode === 'levels') {
             if (typeof startLevel === 'number' && startLevel > 0) {
                 this.setLevel(startLevel);
