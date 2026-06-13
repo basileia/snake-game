@@ -60,11 +60,8 @@ class Game {
 
             if (!newDir) return;
 
-            const opposites = { up: "down", down: "up", left: "right", right: "left" };
-
-            // Prevent reversing into itself
-            if (opposites[newDir] === this.snake.direction && this.snake.body.length > 1) return;
-
+            // Prevent reversing into the immediate neck segment (robust 180° check)
+            if (this.wouldReverse(newDir)) return;
             this.snake.direction = newDir;
         });
     }
@@ -102,9 +99,7 @@ class Game {
                 newDir = dy > 0 ? "down" : "up";
             }
 
-            const opposites = { up: "down", down: "up", left: "right", right: "left" };
-            if (opposites[newDir] === this.snake.direction && this.snake.body.length > 1) return;
-
+            if (this.wouldReverse(newDir)) return;
             this.snake.direction = newDir;
         };
 
@@ -131,7 +126,7 @@ class Game {
 
             const setDir = (e) => {
                 if (e && e.preventDefault) e.preventDefault();
-                if (opposites[dir] === this.snake.direction && this.snake.body.length > 1) return;
+                if (this.wouldReverse(dir)) return;
                 this.snake.direction = dir;
             };
 
@@ -146,6 +141,23 @@ class Game {
 
     init() {
         this.loop();
+    }
+
+    // Return true if changing to newDir would immediately move the head into the neck (180° turn)
+    wouldReverse(newDir) {
+        if (!newDir || !this.snake || !this.snake.body || this.snake.body.length < 2) return false;
+        const head = { ...this.snake.body[0] };
+        const neck = this.snake.body[1];
+        let nx = head.x;
+        let ny = head.y;
+        switch (newDir) {
+            case 'right': nx++; break;
+            case 'left': nx--; break;
+            case 'up': ny--; break;
+            case 'down': ny++; break;
+            default: return false;
+        }
+        return neck && nx === neck.x && ny === neck.y;
     }
 
     initGrid() {
