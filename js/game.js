@@ -238,7 +238,7 @@ class Game {
 
     setLevel(level) {
         this.level = Math.max(1, Math.floor(level));
-        const desired = 20 + (this.level - 1) * 4; // base target grows per level
+        const desired = 20; // keep target fixed at 20 per user's request
         const caps = this.getCapacity();
         this.targetLength = Math.min(desired, caps.recommended);
         this.currentSpeed = Math.max(40, CONFIG.speed - (this.level - 1) * 10);
@@ -264,7 +264,8 @@ class Game {
     levelUp() {
         this.levelComplete = false;
         this.setLevel(this.level + 1);
-        this.spawnApplesForLevel();
+        // reset snake to a single square for the new level and respawn apples
+        this.reset();
     }
 
     // changeLevel removed — levels progress via gameplay
