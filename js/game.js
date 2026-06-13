@@ -25,6 +25,7 @@ class Game {
         this.levelComplete = false;
         this.levelCompleteTimer = 0;
         this.currentSpeed = CONFIG.speed;
+        this._running = false; // prevent duplicate loops
         this.setLevel(this.level);
 
         this.initControls();
@@ -240,6 +241,10 @@ class Game {
             this.currentSpeed = CONFIG.speed;
         }
 
+        // avoid starting multiple loops
+        if (this._running) return;
+        this._running = true;
+
         // draw AI snake if present
         if (this.aiSnake && this.aiSnake.body && this.aiSnake.body.length > 0) {
             const abody = this.aiSnake.body;
@@ -284,6 +289,7 @@ class Game {
             }
         }
         this.reset();
+        console.log('Game start: mode=', this.mode, 'level=', this.level, 'speed=', this.currentSpeed);
         this.loop();
     }
 
@@ -303,7 +309,7 @@ class Game {
             this.levelUp();
         }
 
-        setTimeout(() => this.loop(), this.currentSpeed);
+        if (this._running) setTimeout(() => this.loop(), this.currentSpeed);
     }
 
     update() {
