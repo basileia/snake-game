@@ -18,6 +18,7 @@ class Game {
         this.snake = new Snake("green");
         this.aiSnake = null;
         this.apples = []; // array of {x,y}
+        this.obstacles = []; // array of {x,y,len,orientation}
 
         // level manager
         this.level = 1;
@@ -169,6 +170,16 @@ class Game {
 
     reset() {
         this.snake = new Snake("green");
+
+        // obstacles cleared and generated per-level (we use obstacles on level 3)
+        this.obstacles = [];
+        if (this.mode === 'levels' && this.level === 3) {
+            this.spawnObstaclesForLevel(3, 10); // 3 horizontal obstacles, length 10
+        }
+
+        // spawn apples first (apples avoid obstacles)
+        this.spawnApplesForLevel();
+
         // AI is present in Endless mode, and also in Levels mode for level 2
         this.aiSnake = null;
         if (this.mode === 'endless' || (this.mode === 'levels' && this.level === 2)) {
@@ -184,16 +195,19 @@ class Game {
             ax = Math.max(1, Math.min(this.cols - 2, ax));
             ay = Math.max(1, Math.min(this.rows - 2, ay));
 
-            // avoid colliding with player or apples by searching nearby cells
+            // avoid colliding with player, apples or obstacles by searching nearby cells
             const occ = new Set();
             this.snake.body.forEach(p => occ.add(`${p.x},${p.y}`));
             this.apples.forEach(p => occ.add(`${p.x},${p.y}`));
+            this.obstacles.forEach(ob => {
+                for (let k = 0; k < ob.len; k++) occ.add(`${ob.x + k},${ob.y}`);
+            });
 
             let attempts = 0;
-            while (occ.has(`${ax},${ay}`) && attempts < 50) {
-                // try moving outward in a spiral-ish manner
-                ax = Math.max(1, Math.min(this.cols - 2, ax + (attempts % 3) - 1));
-                ay = Math.max(1, Math.min(this.rows - 2, ay + ((attempts + 1) % 3) - 1));
+            while (occ.has(`${ax},${ay}`) && attempts < 200) {
+                // try random nearby positions
+                ax = Math.max(1, Math.min(this.cols - 2, ax + (Math.floor(Math.random() * 3) - 1)));
+                ay = Math.max(1, Math.min(this.rows - 2, ay + (Math.floor(Math.random() * 3) - 1)));
                 attempts++;
             }
 
@@ -204,8 +218,6 @@ class Game {
             this.aiSnake.alive = true;
             console.log('AI snake positioned at', ax, ay, 'direction', this.aiSnake.direction);
         }
-
-        this.spawnApplesForLevel();
     }
 
     start(mode, startLevel) {
@@ -444,6 +456,12 @@ class Game {
             this.snake.body.forEach(p => occ.add(`${p.x},${p.y}`));
             if (this.aiSnake) this.aiSnake.body.forEach(p => occ.add(`${p.x},${p.y}`));
             this.apples.forEach(p => occ.add(`${p.x},${p.y}`));
+            // obstacles occupy their cells
+            if (this.obstacles && this.obstacles.length) {
+                this.obstacles.forEach(ob => {
+                    for (let k = 0; k < ob.len; k++) occ.add(`${ob.x + k},${ob.y}`);
+                });
+            }
             return occ;
         };
 
@@ -464,6 +482,80 @@ class Game {
                 occ.add(`${px},${py}`);
             }
         }
+    }
+
+    // Generate horizontal obstacles for a level while ensuring the map remains traversable
+    spawnObstaclesForLevel(count = 3, len = 10) {
+        if (!this.cols || !this.rows) return;
+        const maxAttempts = 1000;
+        const placed = [];
+
+        const blockedSetFrom = (obs) => {
+            const s = new Set();
+            obs.forEach(ob => {
+                for (let k = 0; k < ob.len; k++) s.add(`${ob.x + k},${ob.y}`);
+            });
+            return s;
+        };
+
+        const isTraversable = (obs) => {
+            const blocked = blockedSetFrom(obs);
+            // find a free start and target
+            const findFree = (sx, sy, ex, ey) => {
+                const rangeX = [1, this.cols - 2];
+                const rangeY = [1, this.rows - 2];
+                for (let y = sy; y <= ey; y++) {
+                    for (let x = sx; x <= ex; x++) {
+                        if (!blocked.has(`${x},${y}`)) return { x, y };
+                    }
+                }
+                return null;
+            };
+
+            const start = findFree(1, 1, Math.max(1, Math.floor(this.cols / 3)), Math.max(1, Math.floor(this.rows / 3)));
+            const target = findFree(Math.max(1, Math.floor(this.cols * 2 / 3)), Math.max(1, Math.floor(this.rows * 2 / 3)), this.cols - 2, this.rows - 2);
+            if (!start || !target) return false;
+
+            const q = [start];
+            const seen = new Set([`${start.x},${start.y}`]);
+            const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+            while (q.length) {
+                const cur = q.shift();
+                if (cur.x === target.x && cur.y === target.y) return true;
+                for (const d of dirs) {
+                    const nx = cur.x + d[0];
+                    const ny = cur.y + d[1];
+                    if (nx < 1 || nx > this.cols - 2 || ny < 1 || ny > this.rows - 2) continue;
+                    const key = `${nx},${ny}`;
+                    if (seen.has(key) || blocked.has(key)) continue;
+                    seen.add(key);
+                    q.push({ x: nx, y: ny });
+                }
+            }
+            return false;
+        };
+
+        let attempts = 0;
+        while (placed.length < count && attempts < maxAttempts) {
+            attempts++;
+            const x = Math.floor(Math.random() * Math.max(1, this.cols - len - 1)) + 1;
+            const y = Math.floor(Math.random() * Math.max(1, this.rows - 2)) + 1;
+            // ensure doesn't overlap previously placed obstacles
+            const candidate = { x, y, len };
+            let clash = false;
+            for (const p of placed) {
+                // simple bounding overlap check
+                if (y === p.y && x < p.x + p.len && p.x < x + len) { clash = true; break; }
+            }
+            if (clash) continue;
+
+            // test traversability with this candidate added
+            const trial = placed.concat([candidate]);
+            if (!isTraversable(trial)) continue;
+            placed.push(candidate);
+        }
+
+        this.obstacles = placed;
     }
 
     draw() {
@@ -493,6 +585,16 @@ class Game {
         for (let y = 0; y < this.rows; y++) {
             this.ctx.fillRect(0, y * CONFIG.cellSize, CONFIG.cellSize, CONFIG.cellSize);
             this.ctx.fillRect((this.cols - 1) * CONFIG.cellSize, y * CONFIG.cellSize, CONFIG.cellSize, CONFIG.cellSize);
+        }
+
+        // draw obstacles (same color as walls)
+        if (this.obstacles && this.obstacles.length) {
+            this.ctx.fillStyle = "#D2691E";
+            for (const ob of this.obstacles) {
+                for (let k = 0; k < ob.len; k++) {
+                    this.ctx.fillRect((ob.x + k) * CONFIG.cellSize, ob.y * CONFIG.cellSize, CONFIG.cellSize, CONFIG.cellSize);
+                }
+            }
         }
 
         // apple
