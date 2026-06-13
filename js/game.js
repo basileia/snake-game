@@ -322,10 +322,24 @@ class Game {
         }
 
         // player wall collision
-        if (head.x < 0 || head.x >= this.cols || head.y < 0 || head.y >= this.rows) {
+        // player wall collision (walls occupy outermost cells)
+        if (head.x <= 0 || head.x >= this.cols - 1 || head.y <= 0 || head.y >= this.rows - 1) {
             alert("Game over: hit the wall");
             this.reset();
             return;
+        }
+
+        // player obstacle collision
+        if (this.obstacles && this.obstacles.length) {
+            for (const ob of this.obstacles) {
+                for (let k = 0; k < ob.len; k++) {
+                    if (head.x === ob.x + k && head.y === ob.y) {
+                        alert("Game over: hit an obstacle");
+                        this.reset();
+                        return;
+                    }
+                }
+            }
         }
 
         // player self collision
@@ -348,6 +362,20 @@ class Game {
                     this.aiSnake.alive = false;
                     break;
                 }
+            }
+        }
+
+        // AI obstacle collision -> AI dies
+        if (this.aiSnake && this.aiSnake.alive && this.obstacles && this.obstacles.length) {
+            const aHead = this.aiSnake.body[0];
+            for (const ob of this.obstacles) {
+                for (let k = 0; k < ob.len; k++) {
+                    if (aHead.x === ob.x + k && aHead.y === ob.y) {
+                        this.aiSnake.alive = false;
+                        break;
+                    }
+                }
+                if (!this.aiSnake.alive) break;
             }
         }
 
