@@ -534,6 +534,50 @@ class Game {
             this.ctx.fill();
         }
 
+        // draw AI snake if present
+        if (this.aiSnake && this.aiSnake.body && this.aiSnake.body.length > 0) {
+            const abody = this.aiSnake.body;
+
+            // body (exclude head and tail)
+            if (abody.length > 2) {
+                this.ctx.fillStyle = this.aiSnake.color;
+                for (let i = 1; i < abody.length - 1; i++) {
+                    const part = abody[i];
+                    this.ctx.fillRect(
+                        part.x * CONFIG.cellSize,
+                        part.y * CONFIG.cellSize,
+                        CONFIG.cellSize,
+                        CONFIG.cellSize
+                    );
+                }
+            }
+
+            // tail (darker)
+            if (abody.length > 1) {
+                const tail = abody[abody.length - 1];
+                this.ctx.fillStyle = "darkgoldenrod";
+                this.ctx.fillRect(
+                    tail.x * CONFIG.cellSize,
+                    tail.y * CONFIG.cellSize,
+                    CONFIG.cellSize,
+                    CONFIG.cellSize
+                );
+            }
+
+            // head
+            const aHead = abody[0];
+            if (aHead) {
+                const acx = aHead.x * CONFIG.cellSize;
+                const acy = aHead.y * CONFIG.cellSize;
+                this.ctx.fillStyle = this.aiSnake.color;
+                this.ctx.fillRect(acx, acy, CONFIG.cellSize, CONFIG.cellSize);
+                // outline for visibility
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeStyle = "black";
+                this.ctx.strokeRect(acx, acy, CONFIG.cellSize, CONFIG.cellSize);
+            }
+        }
+
         // HUD: show current level only in levels mode
         if (this.mode === 'levels') {
             const hud = `Level ${this.level}`;
