@@ -159,6 +159,36 @@ class Game {
     reset() {
         this.snake = new Snake("green");
         this.aiSnake = this.aiEnabled ? new AISnake("yellow") : null;
+
+        // Position AI snake on the opposite side of the player head (inside walls)
+        if (this.aiSnake) {
+            const playerHead = this.snake.body[0];
+            let ax = this.cols - 1 - playerHead.x;
+            let ay = this.rows - 1 - playerHead.y;
+            // clamp inside playable area (avoid walls at 0 and cols-1)
+            ax = Math.max(1, Math.min(this.cols - 2, ax));
+            ay = Math.max(1, Math.min(this.rows - 2, ay));
+
+            // avoid colliding with player or apples by searching nearby cells
+            const occ = new Set();
+            this.snake.body.forEach(p => occ.add(`${p.x},${p.y}`));
+            this.apples.forEach(p => occ.add(`${p.x},${p.y}`));
+
+            let attempts = 0;
+            while (occ.has(`${ax},${ay}`) && attempts < 50) {
+                // try moving outward in a spiral-ish manner
+                ax = Math.max(1, Math.min(this.cols - 2, ax + (attempts % 3) - 1));
+                ay = Math.max(1, Math.min(this.rows - 2, ay + ((attempts + 1) % 3) - 1));
+                attempts++;
+            }
+
+            this.aiSnake.body = [{ x: ax, y: ay }];
+            // set AI initial direction opposite to player where possible
+            const opposites = { left: 'right', right: 'left', up: 'down', down: 'up' };
+            this.aiSnake.direction = opposites[this.snake.direction] || 'left';
+            this.aiSnake.alive = true;
+        }
+
         this.spawnApplesForLevel();
     }
 
