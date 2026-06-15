@@ -12,25 +12,6 @@ try {
     if (host && host.includes('github.io')) {
         runtimeSpeed = 400; // slower for kids on gh-pages (increased delay)
     }
-
-    // URL override: ?speed=100 (useful for testing from any host)
-    if (typeof window !== 'undefined' && window.location && window.location.search) {
-        const params = new URLSearchParams(window.location.search);
-        const s = params.get('speed');
-        if (s) {
-            const parsed = parseInt(s, 10);
-            if (!Number.isNaN(parsed)) runtimeSpeed = parsed;
-        }
-    }
-
-    // Local override (dev): set localStorage.setItem('snake_speed', '120')
-    if (typeof localStorage !== 'undefined') {
-        const ls = localStorage.getItem('snake_speed');
-        if (ls) {
-            const parsed = parseInt(ls, 10);
-            if (!Number.isNaN(parsed)) runtimeSpeed = parsed;
-        }
-    }
 } catch (e) {
     // ignore runtime detection errors and keep DEFAULT_SPEED
 }

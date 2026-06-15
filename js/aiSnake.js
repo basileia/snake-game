@@ -22,7 +22,8 @@ export class AISnake extends Snake {
                 case "up": h.y--; break;
                 case "down": h.y++; break;
             }
-            return (h.x < 0 || h.x >= cols || h.y < 0 || h.y >= rows);
+            // walls occupy outermost cells (0 and cols-1 / 0 and rows-1)
+            return (h.x <= 0 || h.x >= cols - 1 || h.y <= 0 || h.y >= rows - 1);
         };
 
         // find nearest apple by Manhattan distance
@@ -78,7 +79,7 @@ export class AISnake extends Snake {
         super.move();
         // check wall collision
         const head = this.body[0];
-        if (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows) {
+        if (head.x <= 0 || head.x >= cols - 1 || head.y <= 0 || head.y >= rows - 1) {
             this.alive = false;
         }
         // self-collision check is handled by game logic (it can treat alive=false)
